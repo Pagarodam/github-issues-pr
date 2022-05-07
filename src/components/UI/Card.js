@@ -1,43 +1,28 @@
-import Image from 'next/image';
+const Card = ({data, onClick}) => {
+  const pullOrIssue = data.html_url.includes("pull") ? "Pull" : "Issue";
 
-const Card = (props) => {
   return (
-    <>
-      <div className="card card-side bg-base-100 shadow-xl glass m-5 w-1/4 items-center">
-        <figure>
-          <Image
-            src={props.avatar_url}
-            alt={props.name}
-            width={315}
-            height={490}
-            objectFit="contain"
-          />
-        </figure>
-        <div className="card-body">
-          <h2 className="card-title">{props.name}</h2>
-          <p>Name: {props.login}</p>
-
-          <p>Componente: {component} </p>
-          <div className="card-actions justify-end">
-            <button
-              onClick={() => props.onButtonClick(id)}
-              className={buttonColor}
-            >
-              {buttonLabel}
-            </button>
-          </div>
-
-          <div className="card-actions justify-end">
-            <button
-              onClick={() => props.onEditWood(id)}
-              className={`bg-yellow-700 hover:bg-yellow-900 text-white font-bold py-2 px-4 rounded`}
-            >
-              {"Edit"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </>
+    <div
+      onClick={() => onClick(data)}
+      className={`hover:cursor-pointer hover:bg-gray-100 card-body rounded-lg bg-gray-300 border-4 m-6 p-5 ${pullOrIssue === 'Pull' ? 'hover:border-red-500 border-red-700' : 'hover:border-blue-500 border-blue-700'}`}
+    >
+      <h2 className="text-center text-2xl border-2 rounded-full ">
+        {pullOrIssue}
+      </h2>
+      <p>Title: {data.title}</p>
+      <p>Author username: {data.user.login} </p>
+      <p>
+        Date of creation:
+        {new Date(data.created_at).toLocaleDateString()}
+      </p>
+      <p>Number of comments: {data.comments}</p>
+      <li>Labels:</li>
+      {data.labels?.map((label) => (
+          <ul key={label.id}>
+            <li>{label.name}</li>
+          </ul>
+        ))}
+    </div>
   );
 };
 

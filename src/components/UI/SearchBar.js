@@ -1,56 +1,15 @@
 import { useState } from "react";
-
-const RepoList = (props) => {
-  return (
-    <>
-      <p>User: {props.data.login}</p>
-      <p>Public repos: {props.data.public_repos}</p>
-      <p>{props.data.repos_url}</p>
-      {props.repos.map((repo) => (
-        <ul key={repo.id}>
-          <li>Id: {repo.id}</li>
-          <li>Name: {repo.name}</li>
-        </ul>
-      ))}
-    </>
-  );
-};
-
-const IssueDetail = (props) => {
-  return (
-    <>
-      {/* <p>{props.data.created_at}</p> */}
-      {props.data.map((issue) => (
-        <ul key={issue.id}>
-          <li>Title: {issue.title}</li>
-          <li>Author username: {issue.user.login}</li>
-          <li>
-            Date of creation: {new Date(issue.created_at).toLocaleDateString()}
-          </li>
-          <li>Number of comments: {issue.numberOfComments}</li>
-        </ul>
-      ))}
-      {/*<p>Number of comments: Hacer un fetch</p>
-      <p>List of labels: Hacer otro puto fetch</p>
-      <p>issue o PR?? </p> */}
-    </>
-  );
-};
+import IssueDetail from "../Issues/IssueDetail";
+import RepoList from "../Repos/RepoList";
+import Form from "./Form";
+import Modal from "./Modal";
 
 const SearchBar = (props) => {
   const [userData, setUserData] = useState("");
-  const [repoData, setRepoData] = useState("");
   const [repos, setRepos] = useState([]);
   const [issues, setIssues] = useState([]);
-  
-  // const [issueDetails, setIssueDetails] = useState({
-  //   issue:'',
-  //   numberOfCommits:''
-  // });
-
-
-
-  const [numberOfComments, setNumberOfComments] = useState([]);
+  const [comments, setComments] = useState(null);
+  const [modalData, setModalData] = useState(null);
 
   const [userInput, setUserInput] = useState("");
   const [repositoryInput, setRepositoryInput] = useState("");
@@ -64,36 +23,43 @@ const SearchBar = (props) => {
     setRepositoryInput(event.target.value);
   };
 
+  const getRepoInfo = (user, repo) => {
+    fetch(`https://api.github.com/repos/${user}/${repo}`)
+    .then((res) => res.json())
+    .then((res) => {
+      if (res.message) {
+        setError(res.message);
+      } else {
+        setError(null);
+        getIssues(res.issues_url);
+        setRepos([]);
+        setUserInput("");
+        setRepositoryInput("");
+      }
+    });
+  }
+
+  const getUserRepos = user => {
+    fetch(`https://api.github.com/users/${userInput}`)
+    .then((res) => res.json())
+    .then((res) => {
+      if (res.message) {
+        setError(res.message);
+      } else {
+        setUserData(res);
+        getRepos(res.repos_url);
+        setIssues([]);
+        setError(null);
+      }
+    });
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!repositoryInput && userInput) {
-      fetch(`https://api.github.com/users/${userInput}`)
-        .then((res) => res.json())
-        .then((res) => {
-          if (res.message) {
-            setError(res.message);
-          } else {
-            setUserData(res);
-            getRepos(res.repos_url);
-            setError(null);
-          }
-        });
+      getUserRepos(userInput);
     } else if (repositoryInput && userInput) {
-      fetch(`https://api.github.com/repos/${userInput}/${repositoryInput}`)
-        .then((res) => res.json())
-        .then((res) => {
-          if (res.message) {
-            setError(res.message);
-          } else {
-            setError(null);
-            setRepoData(res);
-            getIssues(res.issues_url);
-            getNumberOfComments(res.comments_url);
-            console.log("handle summit " + res.comments_url);
-            setUserInput("");
-            setRepositoryInput("");
-          }
-        });
+      getRepoInfo(userInput, repositoryInput)
     }
   };
 
@@ -101,7 +67,6 @@ const SearchBar = (props) => {
     fetch(urlRepos)
       .then((res) => res.json())
       .then((res) => {
-
         if (res.message) {
           setError(res.message);
         } else {
@@ -119,55 +84,102 @@ const SearchBar = (props) => {
         if (res.message) {
           setError(res.message);
         } else {
-          console.log("issues number" + res.length)
           setIssues(res);
           setError(null);
         }
       });
   };
 
-  const getNumberOfComments = (urlComments) => {
-    urlComments = urlComments.split("{")[0];
-    console.log("getNumberOfComments " + urlComments);
+  const clickRepository = (repoName, userName) => {
+    console.log("REPOSITORY", repoName);
+    getRepoInfo(userName, repoName);
+  };
+
+  const clickIssue = (event) => {
+    getComments(event.comments_url);
+    setModalData(event);
+  };
+
+  const getComments = (urlComments) => {
     fetch(urlComments)
-    .then((res) => res.json())
-    .then((res) => {
-      console.log("numberOfcomments " + res.length)
-      if (res.message) {
-        setError(res.message);
-      } else {
-        setNumberOfComments(res.lenght);
-        setError(null);
-      }
-    });
+      .then((res) => res.json())
+      .then((res) => {
+        if (res.message) {
+          setError(res.message);
+        } else {
+          setComments(res);
+          setError(null);
+        }
+      });
+  };
+
+  const closeMessageHandler = () => {
+    setModalData(null);
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div>
-        <input
-          value={userInput}
-          placeholder={"Git user"}
-          onChange={userNameHandlerSearch}
-        ></input>
-      </div>
-      <div>
-        <input
-          value={repositoryInput}
-          placeholder={"Enter a repository"}
-          onChange={repositoryHandlerSearch}
-        ></input>
-      </div>
-      <button type="submit">Search</button>
-      {error ? (
-        <h1>{error}</h1>
-      ) : (
-        <div>
-          {userData && <RepoList data={userData} repos={repos} />}
-          {issues && <IssueDetail data={issues} numberOfComments={numberOfComments}/>}
-        </div>
+    <>
+      {modalData && (
+        <Modal
+          data={modalData}
+          onClose={closeMessageHandler}
+          comments={comments}
+        >
+          <div>
+            <p className="text-center p-5 text-3xl font-mono">
+              {modalData.title}
+            </p>
+          </div>
+          <div>
+            <h1 className="text-center pt-8 text-2xl font-mono">Description</h1>
+            <p className="p-4">{modalData.body}</p>
+          </div>
+          {!!comments?.length && (
+            <ul>
+              <h1 className="text-center pt-8 text-2xl font-mono">Comments</h1>
+              {comments.map((comment) => (
+                <>
+                  <p>Author: {comment.user.login}</p>
+                  <p>
+                    Creation date:{" "} 
+                    {new Date(comment.created_at).toLocaleDateString()}
+                  </p>
+                  <li className="p-4">
+                    {console.log(comment)}
+                    {comment.body}
+                  </li>
+                </>
+              ))}
+            </ul>
+          )}
+          <button
+            className=" ml-100 ml-6  text-neutral-50 rounded-full bg-blue-600 p-1 w-32"
+            onClick={closeMessageHandler}
+          >
+            Cerrar
+          </button>
+        </Modal>
       )}
-    </form>
+      <Form
+        onSubmit={handleSubmit}
+        userInput={userInput}
+        userNameHandlerSearch={userNameHandlerSearch}
+        repositoryInput={repositoryInput}
+        repositoryHandlerSearch={repositoryHandlerSearch}
+      />
+      {error ? (
+        <h1 className="text-center p-5 text-3xl font-mono">{error}</h1>
+      ) : (
+        <>
+          {userData && (
+            <RepoList data={userData} repos={repos} onClick={clickRepository} />
+          )}
+          <div className="grid-cols-2">
+            {issues && <IssueDetail data={issues} onClick={clickIssue} />}
+          </div>
+        </>
+      )}
+    </>
   );
 };
 
