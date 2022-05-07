@@ -4,7 +4,7 @@ import RepoList from "../Repos/RepoList";
 import Form from "./Form";
 import Modal from "./Modal";
 
-const SearchBar = (props) => {
+const SearchBar = () => {
   const [userData, setUserData] = useState("");
   const [repos, setRepos] = useState([]);
   const [issues, setIssues] = useState([]);
@@ -25,41 +25,41 @@ const SearchBar = (props) => {
 
   const getRepoInfo = (user, repo) => {
     fetch(`https://api.github.com/repos/${user}/${repo}`)
-    .then((res) => res.json())
-    .then((res) => {
-      if (res.message) {
-        setError(res.message);
-      } else {
-        setError(null);
-        getIssues(res.issues_url);
-        setRepos([]);
-        setUserInput("");
-        setRepositoryInput("");
-      }
-    });
-  }
+      .then((res) => res.json())
+      .then((res) => {
+        if (res.message) {
+          setError(res.message);
+        } else {
+          setError(null);
+          getIssues(res.issues_url);
+          setRepos([]);
+          setUserInput("");
+          setRepositoryInput("");
+        }
+      });
+  };
 
-  const getUserRepos = user => {
+  const getUserRepos = (user) => {
     fetch(`https://api.github.com/users/${userInput}`)
-    .then((res) => res.json())
-    .then((res) => {
-      if (res.message) {
-        setError(res.message);
-      } else {
-        setUserData(res);
-        getRepos(res.repos_url);
-        setIssues([]);
-        setError(null);
-      }
-    });
-  }
+      .then((res) => res.json())
+      .then((res) => {
+        if (res.message) {
+          setError(res.message);
+        } else {
+          setUserData(res);
+          getRepos(res.repos_url);
+          setIssues([]);
+          setError(null);
+        }
+      });
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!repositoryInput && userInput) {
       getUserRepos(userInput);
     } else if (repositoryInput && userInput) {
-      getRepoInfo(userInput, repositoryInput)
+      getRepoInfo(userInput, repositoryInput);
     }
   };
 
@@ -91,7 +91,6 @@ const SearchBar = (props) => {
   };
 
   const clickRepository = (repoName, userName) => {
-    console.log("REPOSITORY", repoName);
     getRepoInfo(userName, repoName);
   };
 
@@ -130,30 +129,35 @@ const SearchBar = (props) => {
               {modalData.title}
             </p>
           </div>
-          <div>
-            <h1 className="text-center pt-8 text-2xl font-mono">Description</h1>
-            <p className="p-4">{modalData.body}</p>
-          </div>
+          {modalData.body && (
+            <div>
+              <h1 className="text-center pt-8 text-2xl font-mono">
+                Description
+              </h1>
+              <p className="p-4">{modalData.body}</p>
+            </div>
+          )}
+
           {!!comments?.length && (
             <ul>
               <h1 className="text-center pt-8 text-2xl font-mono">Comments</h1>
               {comments.map((comment) => (
-                <>
-                  <p>Author: {comment.user.login}</p>
+                <div className="border-2 rounded-lg m-3 p-3 border-blue-500 border-blue-700">
+                  <p><b>Author:</b> {comment.user.login}</p>
                   <p>
-                    Creation date:{" "} 
+                    <b>Creation date:{" "}</b>
                     {new Date(comment.created_at).toLocaleDateString()}
                   </p>
                   <li className="p-4">
                     {console.log(comment)}
                     {comment.body}
                   </li>
-                </>
+                </div>
               ))}
             </ul>
           )}
           <button
-            className=" ml-100 ml-6  text-neutral-50 rounded-full bg-blue-600 p-1 w-32"
+            className="mb-6  ml-100 ml-6  text-neutral-50 rounded-full bg-blue-600 p-1 w-32"
             onClick={closeMessageHandler}
           >
             Cerrar
